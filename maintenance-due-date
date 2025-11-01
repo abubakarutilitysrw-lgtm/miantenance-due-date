@@ -1,0 +1,774 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Maintenance Due Date Tracker</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background-color: #f4f4f4;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        h1 {
+            text-align: center;
+            color: #2c3e50;
+            margin-bottom: 30px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #3498db;
+        }
+
+        .instructions {
+            background: #e8f4fc;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+            border-left: 4px solid #3498db;
+        }
+
+        .instructions h3 {
+            color: #2c3e50;
+            margin-bottom: 10px;
+        }
+
+        .instructions ol {
+            margin-left: 20px;
+        }
+
+        .instructions li {
+            margin-bottom: 5px;
+        }
+
+        .controls {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        button {
+            padding: 10px 15px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: background-color 0.3s;
+        }
+
+        #addRow {
+            background: #27ae60;
+            color: white;
+        }
+
+        #addRow:hover {
+            background: #219a52;
+        }
+
+        .save {
+            background: #3498db;
+            color: white;
+        }
+
+        .save:hover {
+            background: #2980b9;
+        }
+
+        #loadData, #checkDueDates {
+            background: #f39c12;
+            color: white;
+        }
+
+        #loadData:hover, #checkDueDates:hover {
+            background: #e67e22;
+        }
+
+        .delete {
+            background: #e74c3c;
+            color: white;
+            padding: 5px 10px;
+            font-size: 12px;
+        }
+
+        .delete:hover {
+            background: #c0392b;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+        }
+
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border: 1px solid #ddd;
+        }
+
+        th {
+            background-color: #34495e;
+            color: white;
+            font-weight: 600;
+        }
+
+        tr:nth-child(even) {
+            background-color: #f8f9fa;
+        }
+
+        tr:hover {
+            background-color: #e8f4fc;
+        }
+
+        input, select {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+
+        input:focus, select:focus {
+            outline: none;
+            border-color: #3498db;
+            box-shadow: 0 0 5px rgba(52, 152, 219, 0.3);
+        }
+
+        .days-remaining {
+            font-weight: bold;
+            padding: 4px 8px;
+            border-radius: 4px;
+        }
+
+        .positive {
+            color: #27ae60;
+            background-color: #d5f4e6;
+        }
+
+        .warning {
+            color: #f39c12;
+            background-color: #fdebd0;
+        }
+
+        .negative {
+            color: #e74c3c;
+            background-color: #fadbd8;
+        }
+
+        .status-indicator {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 5px;
+        }
+
+        .status-ok {
+            background-color: #27ae60;
+        }
+
+        .status-due-soon {
+            background-color: #f39c12;
+        }
+
+        .status-overdue {
+            background-color: #e74c3c;
+        }
+
+        .overdue {
+            background-color: #fadbd8 !important;
+        }
+
+        .due-soon {
+            background-color: #fdebd0 !important;
+        }
+
+        .notification-bar {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: #2c3e50;
+            color: white;
+            padding: 0;
+            box-shadow: 0 -2px 10px rgba(0,0,0,0.3);
+            z-index: 1000;
+        }
+
+        .notification-header {
+            background: #34495e;
+            padding: 10px 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .notification-header h3 {
+            margin: 0;
+            color: white;
+        }
+
+        .notification-count {
+            background: #e74c3c;
+            color: white;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 12px;
+            margin-left: 8px;
+        }
+
+        .close-notifications {
+            background: none;
+            border: none;
+            color: white;
+            font-size: 20px;
+            cursor: pointer;
+            padding: 0;
+            width: 30px;
+            height: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .notification-list {
+            max-height: 200px;
+            overflow-y: auto;
+            padding: 10px 15px;
+        }
+
+        .notification {
+            padding: 8px;
+            margin: 5px 0;
+            background: rgba(255,255,255,0.1);
+            border-radius: 4px;
+            border-left: 3px solid #3498db;
+        }
+
+        .notification.overdue {
+            border-left-color: #e74c3c;
+            background: rgba(231, 76, 60, 0.1);
+        }
+
+        .empty-message {
+            text-align: center;
+            color: #bdc3c7;
+            font-style: italic;
+        }
+
+        footer {
+            text-align: center;
+            margin-top: 20px;
+            color: #7f8c8d;
+            font-size: 14px;
+            border-top: 1px solid #ecf0f1;
+            padding-top: 10px;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 10px;
+            }
+            
+            table {
+                font-size: 12px;
+            }
+            
+            th, td {
+                padding: 6px;
+            }
+            
+            .controls {
+                flex-direction: column;
+            }
+            
+            button {
+                width: 100%;
+            }
+        }
+
+        .sr-only {
+            position: absolute;
+            width: 1px;
+            height: 1px;
+            padding: 0;
+            margin: -1px;
+            overflow: hidden;
+            clip: rect(0, 0, 0, 0);
+            white-space: nowrap;
+            border: 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Maintenance Due Date Tracker</h1>
+        
+        <div class="instructions">
+            <h3>How to use:</h3>
+            <ol>
+                <li>Add machines using the "Add New Machine" button</li>
+                <li>Fill in the machine details, due dates, and hour meter readings</li>
+                <li>Save your data using the "Save Data" button</li>
+                <li>The "Days Remaining" column shows how many days until maintenance is due</li>
+                <li>Notifications will appear automatically at the bottom for maintenance due within 7 days</li>
+                <li>Notifications will persist and remind you every hour if maintenance is due soon</li>
+            </ol>
+        </div>
+        
+        <div class="controls">
+            <button id="addRow">Add New Machine</button>
+            <button id="saveData" class="save">Save Data</button>
+            <button id="loadData">Load Data</button>
+            <button id="checkDueDates">Check Due Dates Now</button>
+        </div>
+        
+        <table id="maintenanceTable">
+            <caption class="sr-only">Maintenance schedule for industrial machines</caption>
+            <thead>
+                <tr>
+                    <th>Machine ID</th>
+                    <th>Machine Name</th>
+                    <th>Last Maintenance Date</th>
+                    <th>Hour Meter (Last)</th>
+                    <th>Next Due Date</th>
+                    <th>Hour Meter (Due)</th>
+                    <th>Days Remaining</th>
+                    <th>Maintenance Type</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                <!-- Rows will be added here dynamically -->
+            </tbody>
+        </table>
+        
+        <footer>
+            <p>Data is automatically saved in your browser. Notifications will appear at the bottom even when the page is closed and will remind you every hour.</p>
+        </footer>
+    </div>
+
+    <!-- Notification Bar at Bottom -->
+    <div id="notificationBar" class="notification-bar" style="display: none;">
+        <div class="notification-header">
+            <h3>Upcoming Maintenance <span id="notificationCount" class="notification-count">0</span></h3>
+            <button class="close-notifications" aria-label="Close notifications">&times;</button>
+        </div>
+        <div class="notification-list" id="notificationList">
+            <!-- Notifications will be added here -->
+        </div>
+    </div>
+
+    <script>
+        // JavaScript code from your previous implementation goes here
+        // (The same JavaScript code you provided)
+        
+        // Get DOM elements
+        const tableBody = document.querySelector('#maintenanceTable tbody');
+        const addRowBtn = document.getElementById('addRow');
+        const saveDataBtn = document.getElementById('saveData');
+        const loadDataBtn = document.getElementById('loadData');
+        const checkDueDatesBtn = document.getElementById('checkDueDates');
+        const notificationBar = document.getElementById('notificationBar');
+        const closeNotificationsBtn = document.querySelector('.close-notifications');
+        const notificationList = document.getElementById('notificationList');
+        const notificationCount = document.getElementById('notificationCount');
+
+        // Add event listeners
+        addRowBtn.addEventListener('click', addNewRow);
+        saveDataBtn.addEventListener('click', saveData);
+        loadDataBtn.addEventListener('click', loadData);
+        checkDueDatesBtn.addEventListener('click', checkDueDates);
+        closeNotificationsBtn.addEventListener('click', () => {
+            notificationBar.style.display = 'none';
+            localStorage.setItem('notificationBarHidden', 'true');
+        });
+
+        // Function to calculate days remaining
+        function calculateDaysRemaining(dueDate) {
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            
+            const due = new Date(dueDate);
+            due.setHours(0, 0, 0, 0);
+            
+            const timeDiff = due.getTime() - today.getTime();
+            const daysRemaining = Math.ceil(timeDiff / (1000 * 60 * 60 * 24));
+            
+            return daysRemaining;
+        }
+
+        // Function to update days remaining display
+        function updateDaysRemaining(row) {
+            const dueDateInput = row.querySelector('td:nth-child(5) input');
+            const daysRemainingCell = row.querySelector('.days-remaining-cell');
+            
+            if (!dueDateInput.value) {
+                daysRemainingCell.innerHTML = '<span class="days-remaining">-</span>';
+                return;
+            }
+            
+            const daysRemaining = calculateDaysRemaining(dueDateInput.value);
+            
+            let cssClass = 'positive';
+            if (daysRemaining < 0) {
+                cssClass = 'negative';
+            } else if (daysRemaining <= 7) {
+                cssClass = 'warning';
+            }
+            
+            const displayText = daysRemaining < 0 ? 
+                `Overdue by ${Math.abs(daysRemaining)} days` : 
+                `${daysRemaining} days`;
+                
+            daysRemainingCell.innerHTML = `<span class="days-remaining ${cssClass}">${displayText}</span>`;
+        }
+
+        // Function to add a new row to the table
+        function addNewRow() {
+            const newRow = document.createElement('tr');
+            const today = new Date().toISOString().split('T')[0];
+            
+            // Calculate a default due date (30 days from today)
+            const dueDate = new Date();
+            dueDate.setDate(dueDate.getDate() + 30);
+            const dueDateString = dueDate.toISOString().split('T')[0];
+            
+            newRow.innerHTML = `
+                <td><input type="text" placeholder="MACH-001"></td>
+                <td><input type="text" placeholder="CNC Lathe"></td>
+                <td><input type="date" value="${today}"></td>
+                <td><input type="number" placeholder="0" min="0" step="1"></td>
+                <td><input type="date" value="${dueDateString}"></td>
+                <td><input type="number" placeholder="0" min="0" step="1"></td>
+                <td class="days-remaining-cell">
+                    <span class="days-remaining positive">30 days</span>
+                </td>
+                <td>
+                    <select>
+                        <option value="Preventive">Preventive</option>
+                        <option value="Corrective">Corrective</option>
+                        <option value="Predictive">Predictive</option>
+                    </select>
+                </td>
+                <td class="status-cell">
+                    <span class="status-indicator status-ok"></span>
+                    <span class="status-text">OK</span>
+                </td>
+                <td><button class="deleteBtn delete">Delete</button></td>
+            `;
+            
+            tableBody.appendChild(newRow);
+            
+            // Add event listener to the delete button
+            newRow.querySelector('.deleteBtn').addEventListener('click', function() {
+                tableBody.removeChild(newRow);
+                saveData(); // Auto-save after deletion
+            });
+            
+            // Add change listeners to inputs for auto-save
+            const inputs = newRow.querySelectorAll('input, select');
+            inputs.forEach(input => {
+                input.addEventListener('change', function() {
+                    saveData();
+                    updateRowStatus(newRow);
+                    updateDaysRemaining(newRow);
+                });
+            });
+            
+            saveData(); // Auto-save after adding new row
+            updateRowStatus(newRow);
+            updateDaysRemaining(newRow);
+        }
+
+        // Function to update the status of a row
+        function updateRowStatus(row) {
+            const dueDateInput = row.querySelector('td:nth-child(5) input');
+            const statusCell = row.querySelector('.status-cell');
+            const statusIndicator = row.querySelector('.status-indicator');
+            const statusText = row.querySelector('.status-text');
+            
+            if (!dueDateInput.value) {
+                statusIndicator.className = 'status-indicator status-ok';
+                statusText.textContent = 'OK';
+                return;
+            }
+            
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            
+            const dueDate = new Date(dueDateInput.value);
+            dueDate.setHours(0, 0, 0, 0);
+            
+            const oneWeekFromNow = new Date();
+            oneWeekFromNow.setDate(today.getDate() + 7);
+            oneWeekFromNow.setHours(0, 0, 0, 0);
+            
+            if (dueDate < today) {
+                statusIndicator.className = 'status-indicator status-overdue';
+                statusText.textContent = 'OVERDUE';
+                row.classList.add('overdue');
+                row.classList.remove('due-soon');
+            } else if (dueDate <= oneWeekFromNow) {
+                statusIndicator.className = 'status-indicator status-due-soon';
+                statusText.textContent = 'DUE SOON';
+                row.classList.add('due-soon');
+                row.classList.remove('overdue');
+            } else {
+                statusIndicator.className = 'status-indicator status-ok';
+                statusText.textContent = 'OK';
+                row.classList.remove('due-soon', 'overdue');
+            }
+        }
+
+        // Function to save data to localStorage
+        function saveData() {
+            const rows = tableBody.querySelectorAll('tr');
+            const data = [];
+            
+            rows.forEach(row => {
+                const inputs = row.querySelectorAll('input, select');
+                const rowData = {
+                    machineId: inputs[0].value,
+                    machineName: inputs[1].value,
+                    lastMaintenance: inputs[2].value,
+                    lastHourMeter: inputs[3].value,
+                    nextDue: inputs[4].value,
+                    dueHourMeter: inputs[5].value,
+                    maintenanceType: inputs[6].value
+                };
+                data.push(rowData);
+            });
+            
+            localStorage.setItem('maintenanceData', JSON.stringify(data));
+            console.log('Data saved successfully!');
+        }
+
+        // Function to load data from localStorage
+        function loadData() {
+            const savedData = localStorage.getItem('maintenanceData');
+            
+            if (savedData) {
+                // Clear existing rows
+                tableBody.innerHTML = '';
+                
+                const data = JSON.parse(savedData);
+                data.forEach(rowData => {
+                    const newRow = document.createElement('tr');
+                    newRow.innerHTML = `
+                        <td><input type="text" value="${rowData.machineId}"></td>
+                        <td><input type="text" value="${rowData.machineName}"></td>
+                        <td><input type="date" value="${rowData.lastMaintenance}"></td>
+                        <td><input type="number" value="${rowData.lastHourMeter}" min="0" step="1"></td>
+                        <td><input type="date" value="${rowData.nextDue}"></td>
+                        <td><input type="number" value="${rowData.dueHourMeter}" min="0" step="1"></td>
+                        <td class="days-remaining-cell">
+                            <span class="days-remaining">-</span>
+                        </td>
+                        <td>
+                            <select>
+                                <option value="Preventive" ${rowData.maintenanceType === 'Preventive' ? 'selected' : ''}>Preventive</option>
+                                <option value="Corrective" ${rowData.maintenanceType === 'Corrective' ? 'selected' : ''}>Corrective</option>
+                                <option value="Predictive" ${rowData.maintenanceType === 'Predictive' ? 'selected' : ''}>Predictive</option>
+                            </select>
+                        </td>
+                        <td class="status-cell">
+                            <span class="status-indicator status-ok"></span>
+                            <span class="status-text">OK</span>
+                        </td>
+                        <td><button class="deleteBtn delete">Delete</button></td>
+                    `;
+                    
+                    tableBody.appendChild(newRow);
+                    
+                    // Add event listener to the delete button
+                    newRow.querySelector('.deleteBtn').addEventListener('click', function() {
+                        tableBody.removeChild(newRow);
+                        saveData(); // Auto-save after deletion
+                    });
+                    
+                    // Add change listeners to inputs for auto-save
+                    const inputs = newRow.querySelectorAll('input, select');
+                    inputs.forEach(input => {
+                        input.addEventListener('change', function() {
+                            saveData();
+                            updateRowStatus(newRow);
+                            updateDaysRemaining(newRow);
+                        });
+                    });
+                    
+                    // Update row status and days remaining after loading
+                    updateRowStatus(newRow);
+                    updateDaysRemaining(newRow);
+                });
+                
+                console.log('Data loaded successfully!');
+                checkDueDates(); // Check for due dates after loading data
+            } else {
+                alert('No saved data found!');
+            }
+        }
+
+        // Function to check for due dates and show notifications
+        function checkDueDates() {
+            const rows = tableBody.querySelectorAll('tr');
+            const today = new Date();
+            today.setHours(0, 0, 0, 0); // Set to beginning of day for accurate comparison
+            
+            const oneWeekFromNow = new Date();
+            oneWeekFromNow.setDate(today.getDate() + 7);
+            oneWeekFromNow.setHours(0, 0, 0, 0);
+            
+            // Clear previous notifications
+            notificationList.innerHTML = '';
+            
+            let notificationCountValue = 0;
+            
+            // Check each row for due dates
+            rows.forEach((row, index) => {
+                const dueDateInput = row.querySelector('td:nth-child(5) input');
+                const machineNameInput = row.querySelector('td:nth-child(2) input');
+                const machineIdInput = row.querySelector('td:nth-child(1) input');
+                const dueHourMeterInput = row.querySelector('td:nth-child(6) input');
+                
+                if (dueDateInput.value && machineNameInput.value) {
+                    const dueDate = new Date(dueDateInput.value);
+                    dueDate.setHours(0, 0, 0, 0); // Set to beginning of day
+                    
+                    // Check if due date is within a week
+                    if (dueDate <= oneWeekFromNow && dueDate >= today) {
+                        const daysUntilDue = Math.ceil((dueDate - today) / (1000 * 60 * 60 * 24));
+                        notificationList.innerHTML += `
+                            <div class="notification">
+                                <strong>${machineNameInput.value}</strong> (${machineIdInput.value}) - 
+                                Due in ${daysUntilDue} day(s) - ${dueDate.toDateString()}
+                                ${dueHourMeterInput.value ? ` - Target: ${dueHourMeterInput.value}h` : ''}
+                            </div>
+                        `;
+                        notificationCountValue++;
+                    }
+                    // Check if due date has passed
+                    else if (dueDate < today) {
+                        const daysOverdue = Math.ceil((today - dueDate) / (1000 * 60 * 60 * 24));
+                        notificationList.innerHTML += `
+                            <div class="notification overdue">
+                                <strong>${machineNameInput.value}</strong> (${machineIdInput.value}) - 
+                                OVERDUE by ${daysOverdue} day(s) - ${dueDate.toDateString()}
+                                ${dueHourMeterInput.value ? ` - Target: ${dueHourMeterInput.value}h` : ''}
+                            </div>
+                        `;
+                        notificationCountValue++;
+                    }
+                }
+            });
+            
+            // Update notification count
+            notificationCount.textContent = notificationCountValue;
+            
+            // Show notification bar if there are notifications
+            if (notificationCountValue > 0) {
+                // Only show if not manually hidden by user
+                if (localStorage.getItem('notificationBarHidden') !== 'true') {
+                    notificationBar.style.display = 'block';
+                }
+                
+                // Save notification state and timestamp
+                localStorage.setItem('hasNotifications', 'true');
+                localStorage.setItem('lastNotificationTime', new Date().getTime());
+            } else {
+                notificationBar.style.display = 'none';
+                localStorage.setItem('hasNotifications', 'false');
+                notificationList.innerHTML = '<div class="empty-message">No maintenance due within the next week!</div>';
+            }
+        }
+
+        // Function to check if we should show notifications (every hour)
+        function shouldShowNotifications() {
+            const lastNotificationTime = localStorage.getItem('lastNotificationTime');
+            if (!lastNotificationTime) return true;
+            
+            const oneHour = 60 * 60 * 1000; // 1 hour in milliseconds
+            const currentTime = new Date().getTime();
+            
+            return (currentTime - parseInt(lastNotificationTime)) >= oneHour;
+        }
+
+        // Auto-check for due dates when page loads
+        window.addEventListener('load', function() {
+            // Load saved data if available
+            if (localStorage.getItem('maintenanceData')) {
+                loadData();
+            } else {
+                // Add sample data for demonstration
+                addNewRow();
+                // Set sample data
+                const firstRow = tableBody.querySelector('tr');
+                const inputs = firstRow.querySelectorAll('input, select');
+                inputs[0].value = 'MACH-001';
+                inputs[1].value = 'CNC Lathe';
+                inputs[3].value = '1250';
+                inputs[5].value = '1500';
+                
+                // Set due date to 5 days from now for demonstration
+                const dueDate = new Date();
+                dueDate.setDate(dueDate.getDate() + 5);
+                inputs[4].value = dueDate.toISOString().split('T')[0];
+                
+                saveData();
+            }
+            
+            // Check if we should show notifications
+            if (localStorage.getItem('hasNotifications') === 'true' && shouldShowNotifications()) {
+                // Reset the hidden flag to show notifications again
+                localStorage.setItem('notificationBarHidden', 'false');
+                notificationBar.style.display = 'block';
+                checkDueDates();
+            } else {
+                checkDueDates();
+            }
+            
+            // Set up periodic checking (every hour)
+            setInterval(function() {
+                // Update days remaining for all rows
+                const rows = tableBody.querySelectorAll('tr');
+                rows.forEach(row => {
+                    updateDaysRemaining(row);
+                });
+                
+                checkDueDates();
+                if (localStorage.getItem('hasNotifications') === 'true') {
+                    // Reset the hidden flag to show notifications again after an hour
+                    localStorage.setItem('notificationBarHidden', 'false');
+                    notificationBar.style.display = 'block';
+                }
+            }, 60 * 60 * 1000); // 1 hour
+            
+            // Also update days remaining every minute to keep it current
+            setInterval(function() {
+                const rows = tableBody.querySelectorAll('tr');
+                rows.forEach(row => {
+                    updateDaysRemaining(row);
+                });
+            }, 60 * 1000); // 1 minute
+        });
+    </script>
+</body>
+</html>
